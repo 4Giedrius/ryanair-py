@@ -3,6 +3,7 @@ build
 dist
 ryanair_py.egg-info
 *coverage*
+env
 
 *.iml
 inspectionProfiles
