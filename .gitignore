@@ -11,3 +11,5 @@ modules.xml
 vcs.xml
 .idea
 .vscode
+bin
+lib
