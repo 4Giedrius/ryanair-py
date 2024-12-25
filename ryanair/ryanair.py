@@ -33,6 +33,8 @@ class RyanairException(Exception):
 # noinspection PyBroadException
 class Ryanair:
     BASE_SERVICES_API_URL = "https://services-api.ryanair.com/farfnd/v4/"
+    BASE_LOCATE_API_URL = "https://www.ryanair.com/api/locate/v1/"
+
 
     def __init__(self, currency: Optional[str] = None):
         self.currency = currency
@@ -141,6 +143,65 @@ class Ryanair:
             ]
         else:
             return []
+    
+    @staticmethod
+    def get_airports_by_country(country_code: str, exclude_airports: list = None) -> list:
+        """
+        Returns a list of airport codes for a specific country
+        Args:
+            country_code (str): Two-letter country code (e.g., 'LT' for Lithuania)
+            exclude_airports (list): Optional list of airport codes to exclude from results
+        Returns:
+            list: List of airport codes in the specified country
+        """
+        airports_by_country = {
+            'AT': ['VIE', 'SZG', 'INN', 'GRZ', 'LNZ', 'KLU'],  # Austria
+            'BE': ['BRU', 'CRL', 'OST'],  # Belgium
+            'BG': ['SOF', 'BOJ', 'VAR'],  # Bulgaria
+            'HR': ['ZAG', 'DBV', 'SPU', 'ZAD', 'PUY', 'RJK'],  # Croatia
+            'CY': ['LCA', 'PFO'],  # Cyprus
+            'CZ': ['PRG', 'BRQ', 'OSR'],  # Czech Republic
+            'DK': ['CPH', 'BLL', 'AAL', 'AAR'],  # Denmark
+            'EE': ['TLL'],  # Estonia
+            'FI': ['HEL', 'TMP', 'TKU', 'OUL'],  # Finland
+            'FR': ['CDG', 'ORY', 'BVA', 'BOD', 'MRS', 'TLS', 'NCE', 'LYS', 'NTE', 'LIL'],  # France
+            'DE': ['BER', 'CGN', 'DUS', 'FRA', 'HAM', 'MUC', 'STR', 'HAJ', 'NUE', 'DRS', 'LEJ', 'BRE'],  # Germany
+            'GR': ['ATH', 'SKG', 'HER', 'RHO', 'CFU', 'CHQ', 'KLX', 'PVK', 'JMK', 'JTR'],  # Greece
+            'HU': ['BUD', 'DEB'],  # Hungary
+            'IS': ['KEF'],  # Iceland
+            'IE': ['DUB', 'SNN', 'ORK', 'KIR', 'NOC', 'GWY'],  # Ireland
+            'IT': ['FCO', 'CIA', 'MXP', 'BGY', 'VCE', 'TSF', 'BLQ', 'PSA', 'NAP', 'PMO', 'CAG', 'CTA', 'SUF', 'BRI', 'PSR', 'AOI', 'RMI', 'TRS', 'VRN', 'GOA', 'TRN'],  # Italy
+            'LV': ['RIX'],  # Latvia
+            'LT': ['VNO', 'KUN', 'PLQ'],  # Lithuania
+            'LU': ['LUX'],  # Luxembourg
+            'MT': ['MLA'],  # Malta
+            'ME': ['TGD'],  # Montenegro
+            'MA': ['RAK', 'FEZ', 'AGA', 'TNG', 'OUD'],  # Morocco
+            'NL': ['AMS', 'EIN', 'RTM', 'MST', 'GRQ'],  # Netherlands
+            'NO': ['OSL', 'TRF', 'BGO', 'SVG', 'TRD'],  # Norway
+            'PL': ['WAW', 'WMI', 'GDN', 'KRK', 'KTW', 'POZ', 'WRO', 'RZE', 'LUZ', 'BZG', 'SZZ', 'LCJ'],  # Poland
+            'PT': ['LIS', 'OPO', 'FAO', 'FNC', 'PDL'],  # Portugal
+            'RO': ['OTP', 'CLJ', 'IAS', 'TSR', 'CRA', 'SBZ', 'SUJ'],  # Romania
+            'SK': ['BTS', 'KSC'],  # Slovakia
+            'SI': ['LJU'],  # Slovenia
+            'ES': ['MAD', 'BCN', 'AGP', 'ALC', 'PMI', 'IBZ', 'VLC', 'SVQ', 'BIO', 'SCQ', 'SDR', 'VGO', 'OVD', 'LEI', 'GRX', 'REU', 'XRY', 'MJV', 'VLL'],  # Spain
+            'SE': ['ARN', 'NYO', 'GOT', 'MMX', 'VST'],  # Sweden
+            'CH': ['ZRH', 'BSL', 'GVA'],  # Switzerland
+            'GB': ['LHR', 'LGW', 'STN', 'LTN', 'MAN', 'EDI', 'BHX', 'GLA', 'BRS', 'LPL', 'NCL', 'BFS', 'ABZ', 'CWL', 'EXT', 'BOH', 'SOU', 'BHD'],  # United Kingdom (Great Britain)
+            'UA': ['KBP', 'LWO'],  # Ukraine
+            'IL': ['TLV'],  # Israel
+            'JO': ['AMM', 'AQJ'],  # Jordan
+            'CY': ['LCA', 'PFO'],  # Cyprus
+        }
+        
+        # Get airports for the country
+        airports = airports_by_country.get(country_code.upper(), [])
+        
+        # If exclude_airports is provided, filter out those airports
+        if exclude_airports:
+            airports = [airport for airport in airports if airport not in exclude_airports]
+        
+        return airports
 
     @staticmethod
     def _get_backoff_type():
@@ -226,3 +287,44 @@ class Ryanair:
     @property
     def num_queries(self) -> __init__:
         return self._num_queries
+
+    def get_airport_info(self, iata_code: str):
+        url = f"{Ryanair.BASE_LOCATE_API_URL}autocomplete/airports"
+        params = {"phrase": iata_code, "market": "en-gb"}
+        try:
+            return self._retryable_query(url, params)
+        except Exception as e:
+            raise RyanairException(f"Failed to fetch airport info: {e}")
+
+    def get_active_airports(self):
+        url = "https://www.ryanair.com/api/views/locate/3/airports/en/active"
+        try:
+            return self._retryable_query(url)
+        except Exception as e:
+            raise RyanairException(f"Failed to fetch active airports: {e}")
+ 
+    def get_countries(self):
+        url = "https://www.ryanair.com/api/views/locate/3/countries/en"
+        try:
+            return self._retryable_query(url)
+        except Exception as e:
+            raise RyanairException(f"Failed to fetch countries: {e}")
+
+    def get_available_flight_dates(self, departure_airport: str, arrival_airport: str):
+        """
+        Fetches available flight dates for one-way fares between two airports.
+
+        Args:
+            departure_airport (str): IATA code of the departure airport.
+            arrival_airport (str): IATA code of the arrival airport.
+
+        Returns:
+            List[str]: A list of available dates in 'YYYY-MM-DD' format.
+        """
+        url = f"https://www.ryanair.com/api/farfnd/v4/oneWayFares/{departure_airport}/{arrival_airport}/availabilities"
+        try:
+            available_dates = self._retryable_query(url)
+            return available_dates
+        except Exception as e:
+            raise RyanairException(f"Failed to fetch available flight dates: {e}")
+
