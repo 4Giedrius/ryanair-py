@@ -35,24 +35,25 @@ def count_weekdays(start_date, end_date, outbound_time, inbound_time):
         current_date += timedelta(days=1)
     return weekdays
 
-def search_flights(origin_country: str, destination: str = None, max_price: int = 200, min_duration_days: int = 2):
+def search_flights(origin_country: str, destinations: list = None, max_price: int = 200, min_duration_days: int = 2):
     """
-    Search for flights from origin country to destination
+    Search for flights from origin country to multiple destinations
     Args:
         origin_country (str): Country code for origin airports
-        destination (str): Optional destination (can be either country code or airport code)
+        destinations (list): Optional list of destination country codes (can be either country codes or airport codes)
         max_price (int): Maximum price for flights
         min_duration_days (int): Minimum duration of the trip in days
     """
     origin_airports = api.get_airports_by_country(origin_country)
     
-    # Check if destination is a country code or airport code
-    destination_airports = None
-    if destination:
-        if len(destination) == 2:  # Country code
-            destination_airports = api.get_airports_by_country(destination)
-        else:  # Airport code
-            destination_airports = [destination]
+    # Check if destinations are provided
+    destination_airports = []
+    if destinations:
+        for destination in destinations:
+            if len(destination) == 2:  # Country code
+                destination_airports.extend(api.get_airports_by_country(destination))
+            else:  # Airport code
+                destination_airports.append(destination)
     
     period_start = datetime.strptime("2025-04-01", '%Y-%m-%d')
     period_end = datetime.strptime("2025-05-30", '%Y-%m-%d')
@@ -73,10 +74,9 @@ def search_flights(origin_country: str, destination: str = None, max_price: int 
             )
             
             for trip in trips:
-                # Check destination if specified
-                if destination_airports:
-                    if trip.outbound.destination not in destination_airports:
-                        continue
+                # Check if destination is in the list of valid destinations
+                if destination_airports and trip.outbound.destination not in destination_airports:
+                    continue
                 
                 duration_seconds = (trip.inbound.departureTime - trip.outbound.departureTime).total_seconds()
                 duration_days = int(duration_seconds // 86400)
@@ -122,4 +122,4 @@ def search_flights(origin_country: str, destination: str = None, max_price: int 
 # Example usage:
 if __name__ == "__main__":
     
-    search_flights('LT', 'IT', max_price=250, min_duration_days=3)
+    search_flights('LT', ['IT', 'ES'], max_price=250, min_duration_days=3)
