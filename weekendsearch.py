@@ -51,7 +51,7 @@ def count_weekdays(start_date, end_date, outbound_time, inbound_time):
     
     return weekdays
 
-def search_flights(origin_country: str, destinations: list = None, max_price: int = 200, min_duration_days: int = 2, start_date: str = "2025-04-01", end_date: str = "2025-05-30"):
+def search_flights(origin_country: str, destinations: list = None, max_price: int = 200, min_duration_days: int = 2, max_duration_days: int = 7, start_date: str = "2025-04-01", end_date: str = "2025-05-30"):
     """
     Search for flights from origin country to multiple destinations
     Args:
@@ -59,6 +59,7 @@ def search_flights(origin_country: str, destinations: list = None, max_price: in
         destinations (list): Optional list of destination country codes (can be either country codes or airport codes)
         max_price (int): Maximum price for flights
         min_duration_days (int): Minimum duration of the trip in days
+        max_duration_days (int): Maximum duration of the trip in days
         start_date (str): Start date for the search in 'YYYY-MM-DD' format
         end_date (str): End date for the search in 'YYYY-MM-DD' format
     """
@@ -77,10 +78,8 @@ def search_flights(origin_country: str, destinations: list = None, max_price: in
     period_end = datetime.strptime(end_date, '%Y-%m-%d')
     from_date = period_start
 
-
-    
     while from_date < period_end:
-        outbound_end = from_date + timedelta(days=3)  # 3 days outbound window
+        outbound_end = from_date + timedelta(days=2)  # 3 days outbound window
         return_start = from_date + timedelta(days=min_duration_days)  # return start date based on min duration
         return_end = return_start + timedelta(days=5)  # 5 days return window
         
@@ -103,7 +102,8 @@ def search_flights(origin_country: str, destinations: list = None, max_price: in
                 duration_days = int(duration_seconds // 86400)
                 duration_hours = int((duration_seconds % 86400) // 3600)
                 
-                if trip.totalPrice <= max_price and duration_days >= min_duration_days:
+                # Check if the trip meets the duration criteria
+                if trip.totalPrice <= max_price and duration_days >= min_duration_days and duration_days <= max_duration_days:
                     weekdays_used = count_weekdays(
                         trip.outbound.departureTime, 
                         trip.inbound.departureTime,
@@ -141,4 +141,4 @@ def search_flights(origin_country: str, destinations: list = None, max_price: in
 
 # Example usage:
 if __name__ == "__main__":
-    search_flights(origin_country='LT', destinations=[], max_price=250, min_duration_days=3, start_date="2025-04-20", end_date="2025-05-07")
+    search_flights(origin_country='LT', destinations=['CY', 'MT', 'GR'], max_price=250, min_duration_days=2, max_duration_days=5, start_date="2025-02-27", end_date="2025-10-01")
