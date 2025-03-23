@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 from ryanair import Ryanair
 import time
+import sqlite3  # New import for SQLite
 
 api = Ryanair(currency="EUR")  # Euro currency, so could also be GBP etc. also
 
@@ -63,7 +64,8 @@ def search_flights(origin_country: str, destinations: list = None, max_price: in
         start_date (str): Start date for the search in 'YYYY-MM-DD' format
         end_date (str): End date for the search in 'YYYY-MM-DD' format
     """
-    origin_airports = api.get_airports_by_country(origin_country)
+    #origin_airports = api.get_airports_by_country(origin_country)
+    origin_airports = ['KUN']
     
     # Check if destinations are provided
     destination_airports = []
@@ -103,17 +105,17 @@ def search_flights(origin_country: str, destinations: list = None, max_price: in
                 duration_hours = int((duration_seconds % 86400) // 3600)
                 
                 # Check if the trip meets the duration criteria
-                if trip.totalPrice <= max_price and duration_days >= min_duration_days and duration_days <= max_duration_days:
-                    weekdays_used = count_weekdays(
-                        trip.outbound.departureTime, 
-                        trip.inbound.departureTime,
-                        trip.outbound.departureTime,
-                        trip.inbound.departureTime
-                    )
-                    # Calculate ratio of total days to weekdays used
-                    ratio = duration_days / weekdays_used if weekdays_used > 0 else 0
-                    all_weekend_trips.append((trip, duration_days, duration_hours, weekdays_used, ratio))
-        
+                #if trip.totalPrice <= max_price and duration_days >= min_duration_days and duration_days <= max_duration_days:
+                weekdays_used = count_weekdays(
+                    trip.outbound.departureTime, 
+                    trip.inbound.departureTime,
+                    trip.outbound.departureTime,
+                    trip.inbound.departureTime
+                )
+                # Calculate ratio of total days to weekdays used
+                ratio = duration_days / weekdays_used if weekdays_used > 0 else 0
+                all_weekend_trips.append((trip, duration_days, duration_hours, weekdays_used, ratio))
+                
         if all_weekend_trips:
             print(f"Checking weekend: {from_date.date()} => {return_end.date()}")
             # Sort all trips for this weekend by price
@@ -141,4 +143,9 @@ def search_flights(origin_country: str, destinations: list = None, max_price: in
 
 # Example usage:
 if __name__ == "__main__":
-    search_flights(origin_country='LT', destinations=['CY', 'MT', 'GR'], max_price=250, min_duration_days=2, max_duration_days=5, start_date="2025-02-27", end_date="2025-10-01")
+    #destinations = ['MT'] # Added more warm countries
+    #destinations = ['ES', 'IT', 'GR', 'PT', 'CY', 'MT', 'HR', 'ME', 'AL', 'TR'] # Added more warm countries
+
+    destinations = []
+    search_flights(origin_country='LT', destinations=destinations, max_price=150, min_duration_days=2, max_duration_days=5, start_date="2025-05-08", end_date="2025-08-06")
+
